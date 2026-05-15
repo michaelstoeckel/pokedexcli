@@ -94,13 +94,13 @@ func commandMap(conf *config) error {
 		conf.next = "https://pokeapi.co/api/v2/location-area/"
 	}
 
-	loca, err := pokeapi.GetLocations(conf.next)
+	locations, err := pokeapi.GetLocations(conf.next)
 	if err != nil {
 		return err
 	}
 
-	updateConfig(conf, loca)
-	printLocations(loca)
+	updateConfig(conf, locations)
+	printLocations(locations)
 
 	return nil
 }
@@ -112,25 +112,24 @@ func commandMapB(conf *config) error {
 		return nil
 	}
 
-	loca, err := pokeapi.GetLocations(conf.prev)
+	locations, err := pokeapi.GetLocations(conf.prev)
 	if err != nil {
 		return err
 	}
 
-	updateConfig(conf, loca)
-
-	printLocations(loca)
+	updateConfig(conf, locations)
+	printLocations(locations)
 
 	return nil
 }
 
-func updateConfig(conf *config, loca pokeapi.Locations) {
-	conf.next = loca.Next
-	conf.prev = loca.Previous
+func updateConfig(conf *config, locations pokeapi.Locations) {
+	conf.next = locations.Next
+	conf.prev = locations.Previous
 }
 
-func printLocations(loca pokeapi.Locations) {
-	for _, loc := range loca.Results {
-		fmt.Println(loc.Name)
+func printLocations(locations pokeapi.Locations) {
+	for _, location := range locations.Results {
+		fmt.Println(location.Name)
 	}
 }
