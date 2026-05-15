@@ -2,31 +2,16 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/michaelstoeckel/pokedexcli/internal/pokeapi"
 )
 
 type config struct {
 	next string
 	prev string
-}
-
-type location struct {
-	// Capitalize Name and Url
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
-type locations struct {
-	// Capitalize all fields
-	Count    int        `json:"count"`
-	Next     string     `json:"next"`
-	Previous string     `json:"previous"`
-	Results  []location `json:"results"`
 }
 
 type cliCommand struct {
@@ -109,30 +94,13 @@ func commandMap(conf *config) error {
 		conf.next = "https://pokeapi.co/api/v2/location-area/"
 	}
 
-	res, err := http.Get(conf.next)
-	if err != nil {
-		return err // Return the error instead of killing the app
-	}
-	defer res.Body.Close() // Ensure closure happens
-
-	body, err := io.ReadAll(res.Body)
+	loca, err := pokeapi.GetLocations(conf.next)
 	if err != nil {
 		return err
 	}
 
-	loca := locations{}
-	err = json.Unmarshal(body, &loca)
-	if err != nil {
-		return err
-	}
-
-	// Now you can update your config for the "next" page
-	conf.next = loca.Next
-	conf.prev = loca.Previous
-
-	for _, loc := range loca.Results {
-		fmt.Println(loc.Name)
-	}
+	updateConfig(conf, loca)
+	printLocations(loca)
 
 	return nil
 }
@@ -144,30 +112,25 @@ func commandMapB(conf *config) error {
 		return nil
 	}
 
-	res, err := http.Get(conf.prev)
-	if err != nil {
-		return err // Return the error instead of killing the app
-	}
-	defer res.Body.Close() // Ensure closure happens
-
-	body, err := io.ReadAll(res.Body)
+	loca, err := pokeapi.GetLocations(conf.prev)
 	if err != nil {
 		return err
 	}
 
-	loca := locations{}
-	err = json.Unmarshal(body, &loca)
-	if err != nil {
-		return err
-	}
+	updateConfig(conf, loca)
 
-	// Now you can update your config for the "next" page
+	printLocations(loca)
+
+	return nil
+}
+
+func updateConfig(conf *config, loca pokeapi.Locations) {
 	conf.next = loca.Next
 	conf.prev = loca.Previous
+}
 
+func printLocations(loca pokeapi.Locations) {
 	for _, loc := range loca.Results {
 		fmt.Println(loc.Name)
 	}
-
-	return nil
 }
