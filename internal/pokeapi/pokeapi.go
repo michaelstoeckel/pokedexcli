@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/michaelstoeckel/pokedexcli/internal/pokecache"
 )
 
 type location struct {
@@ -20,21 +22,27 @@ type Locations struct {
 	Results  []location `json:"results"`
 }
 
-func GetLocations(url string) (Locations, error) {
+func GetLocations(url string, cache *pokecache.Cache) (Locations, error) {
+	// get data from cache if available
+	data, ok := cache.Get(url)
+	// not in cache get data from url
+	if !ok {
+		res, err := http.Get(url)
+		if err != nil {
+			return Locations{}, err // Return the error instead of killing the app
+		}
+		defer res.Body.Close() // Ensure closure happens
 
-	res, err := http.Get(url)
-	if err != nil {
-		return Locations{}, err // Return the error instead of killing the app
-	}
-	defer res.Body.Close() // Ensure closure happens
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return Locations{}, err
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return Locations{}, err
+		}
+		// add to cache
+		cache.Add(url, data)
 	}
 
 	loca := Locations{}
-	err = json.Unmarshal(body, &loca)
+	err := json.Unmarshal(data, &loca)
 	if err != nil {
 		return Locations{}, err
 	}

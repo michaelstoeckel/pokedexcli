@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/michaelstoeckel/pokedexcli/internal/pokeapi"
+	"github.com/michaelstoeckel/pokedexcli/internal/pokecache"
 )
 
 type config struct {
@@ -17,7 +19,7 @@ type config struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(conf *config) error
+	callback    func(conf *config, cache *pokecache.Cache) error
 }
 
 func getCommands() map[string]cliCommand {
@@ -43,7 +45,8 @@ func getCommands() map[string]cliCommand {
 
 func startRepl() error {
 	scanner := bufio.NewScanner(os.Stdin)
-	conf := config{next: "", prev: ""}
+	conf := &config{next: "", prev: ""}
+	cache := pokecache.NewCache(30 * time.Second)
 
 	// repl loop
 	for {
@@ -53,13 +56,16 @@ func startRepl() error {
 		input := scanner.Text()
 
 		words := cleanInput(input)
+		if len(words) <= 0 {
+			continue
+		}
 		command := words[0]
 
 		handler := getCommands()[command].callback
 		if handler == nil {
 			fmt.Println("unknown command")
 		} else {
-			err := handler(&conf)
+			err := handler(conf, cache)
 			if err != nil {
 				fmt.Printf("%v", err)
 			}
@@ -72,13 +78,13 @@ func cleanInput(text string) []string {
 	return words
 }
 
-func commandExit(conf *config) error {
+func commandExit(conf *config, cache *pokecache.Cache) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(conf *config) error {
+func commandHelp(conf *config, cache *pokecache.Cache) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -89,12 +95,12 @@ func commandHelp(conf *config) error {
 	return nil
 }
 
-func commandMap(conf *config) error {
+func commandMap(conf *config, cache *pokecache.Cache) error {
 	if conf.next == "" {
 		conf.next = "https://pokeapi.co/api/v2/location-area/"
 	}
 
-	locations, err := pokeapi.GetLocations(conf.next)
+	locations, err := pokeapi.GetLocations(conf.next, cache)
 	if err != nil {
 		return err
 	}
@@ -105,14 +111,14 @@ func commandMap(conf *config) error {
 	return nil
 }
 
-func commandMapB(conf *config) error {
+func commandMapB(conf *config, cache *pokecache.Cache) error {
 
 	if conf.prev == "" {
 		fmt.Println("you're on the first page")
 		return nil
 	}
 
-	locations, err := pokeapi.GetLocations(conf.prev)
+	locations, err := pokeapi.GetLocations(conf.prev, cache)
 	if err != nil {
 		return err
 	}
