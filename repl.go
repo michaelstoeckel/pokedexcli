@@ -143,6 +143,22 @@ func (p *Pokeapi) commandMapB(args []string) error {
 }
 
 func (p *Pokeapi) commandExplore(args []string) error {
+	url := "https://pokeapi.co/api/v2/location-area/"
+	if len(args) == 0 {
+		return fmt.Errorf("please specify an area\n")
+	}
+	url += args[0]
+	fmt.Printf("Exploring %s ...\n", args[0])
+	var err error
+	p.Response, err = pokeapi.GetPokemonResponse(url, &p.Cache)
+	if err != nil {
+		return err
+	}
+
+	for _, encounter := range p.Response.PokemonEncounters {
+		fmt.Println(encounter.Pokemon.Name)
+	}
+
 	return nil
 }
 
