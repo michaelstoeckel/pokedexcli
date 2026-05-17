@@ -8,16 +8,16 @@ import (
 	"github.com/michaelstoeckel/pokedexcli/internal/pokecache"
 )
 
-type PokemonResponse struct {
+type PokemapResponse struct {
 	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
 }
 
 type PokemonEncounter struct {
-	Pokemon        Pokemon         `json:"pokemon"`
+	Pokemon        PokemapPokemon  `json:"pokemon"`
 	VersionDetails []VersionDetail `json:"version_details"`
 }
 
-type Pokemon struct {
+type PokemapPokemon struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
@@ -46,29 +46,29 @@ type EncounterMethod struct {
 	URL  string `json:"url"`
 }
 
-func GetPokemonResponse(url string, cache *pokecache.Cache) (PokemonResponse, error) {
+func GetPokemonResponse(url string, cache *pokecache.Cache) (PokemapResponse, error) {
 	// get data from cache if available
 	data, ok := cache.Get(url)
 	// not in cache get data from url
 	if !ok {
 		res, err := http.Get(url)
 		if err != nil {
-			return PokemonResponse{}, err // Return the error instead of killing the app
+			return PokemapResponse{}, err // Return the error instead of killing the app
 		}
 		defer res.Body.Close() // Ensure closure happens
 
 		data, err = io.ReadAll(res.Body)
 		if err != nil {
-			return PokemonResponse{}, err
+			return PokemapResponse{}, err
 		}
 		// add to cache
 		cache.Add(url, data)
 	}
 
-	resp := PokemonResponse{}
+	resp := PokemapResponse{}
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
-		return PokemonResponse{}, err
+		return PokemapResponse{}, err
 	}
 	return resp, nil
 }

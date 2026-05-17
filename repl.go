@@ -24,7 +24,7 @@ type cliCommand struct {
 
 type Pokeapi struct {
 	Cache    pokecache.Cache
-	Response pokeapi.PokemonResponse
+	Response pokeapi.PokemapResponse
 	config   config
 }
 
@@ -47,8 +47,12 @@ func getCommands(p *Pokeapi) map[string]cliCommand {
 			callback:    p.commandMapB,
 		},
 		"explore": {
-			description: "what?",
+			description: "explores a map",
 			callback:    p.commandExplore,
+		},
+		"catch": {
+			description: "catches a pokemon",
+			callback:    p.commandCatch,
 		},
 	}
 }
@@ -58,7 +62,7 @@ func startRepl() error {
 	conf := config{next: "", prev: ""}
 	pokeapi := Pokeapi{
 		Cache:    *pokecache.NewCache(30 * time.Second),
-		Response: pokeapi.PokemonResponse{},
+		Response: pokeapi.PokemapResponse{},
 		config:   conf,
 	}
 
@@ -158,6 +162,18 @@ func (p *Pokeapi) commandExplore(args []string) error {
 	for _, encounter := range p.Response.PokemonEncounters {
 		fmt.Println(encounter.Pokemon.Name)
 	}
+
+	return nil
+}
+
+func (p *Pokeapi) commandCatch(args []string) error {
+	url := "https://pokeapi.co/api/v2/pokemon/"
+	if len(args) == 0 {
+		return fmt.Errorf("please specify a pokemon\n")
+	}
+
+	url += args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", args[0])
 
 	return nil
 }
