@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ type cliCommand struct {
 type Pokeapi struct {
 	Cache    pokecache.Cache
 	Response pokeapi.PokemapResponse
+	Pokedex  map[string]pokeapi.Pokemon
 	config   config
 }
 
@@ -54,6 +56,10 @@ func getCommands(p *Pokeapi) map[string]cliCommand {
 			description: "catches a pokemon",
 			callback:    p.commandCatch,
 		},
+		"inspect": {
+			description: "inspects a pokemon",
+			callback:    p.commandInspect,
+		},
 	}
 }
 
@@ -63,6 +69,7 @@ func startRepl() error {
 	pokeapi := Pokeapi{
 		Cache:    *pokecache.NewCache(30 * time.Second),
 		Response: pokeapi.PokemapResponse{},
+		Pokedex:  map[string]pokeapi.Pokemon{},
 		config:   conf,
 	}
 
@@ -96,6 +103,10 @@ func cleanInput(text string) []string {
 }
 
 func (p *Pokeapi) commandExit(args []string) error {
+	fmt.Println("You catched:")
+	for _, pokemon := range p.Pokedex {
+		fmt.Println(pokemon.Name)
+	}
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
@@ -154,7 +165,7 @@ func (p *Pokeapi) commandExplore(args []string) error {
 	url += args[0]
 	fmt.Printf("Exploring %s ...\n", args[0])
 	var err error
-	p.Response, err = pokeapi.GetPokemonResponse(url, &p.Cache)
+	p.Response, err = pokeapi.GetPokemapResponse(url, &p.Cache)
 	if err != nil {
 		return err
 	}
@@ -171,9 +182,53 @@ func (p *Pokeapi) commandCatch(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("please specify a pokemon\n")
 	}
+	name := args[0]
+	url += name
+	fmt.Printf("Throwing a Pokeball at %s...\n", name)
 
-	url += args[0]
-	fmt.Printf("Throwing a Pokeball at %s...\n", args[0])
+	pokemon, err := pokeapi.GetPokemon(url, &p.Cache)
+	if err != nil {
+		return err
+	}
+
+	catchVal := rand.Intn(500)
+	fmt.Printf("%s %v/%v\n", pokemon.Name, pokemon.BaseExperience, catchVal)
+
+	if catchVal < pokemon.BaseExperience {
+		fmt.Printf("%s escaped!\n", pokemon.Name)
+		return nil
+	}
+
+	p.Pokedex[pokemon.Name] = pokemon
+	fmt.Printf("%s was caught!\n", pokemon.Name)
+
+	return nil
+}
+
+func (p *Pokeapi) commandInspect(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("please specify a pokemon\n")
+	}
+	name := args[0]
+
+	pokemon, ok := p.Pokedex[name]
+	if !ok {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Name:   %s\n", pokemon.Name)
+	fmt.Printf("Height: %v\n", pokemon.Height)
+	fmt.Printf("Weight: %v\n", pokemon.Weight)
+	fmt.Printf("Stats:\n")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf("  -%v: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Printf("Types:\n")
+	var types pokeapi.Types
+	for _, types = range pokemon.Types {
+		fmt.Printf("  -%v\n", types.Type.Name)
+	}
 
 	return nil
 }

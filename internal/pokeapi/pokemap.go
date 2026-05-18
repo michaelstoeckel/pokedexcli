@@ -46,7 +46,7 @@ type EncounterMethod struct {
 	URL  string `json:"url"`
 }
 
-func GetPokemonResponse(url string, cache *pokecache.Cache) (PokemapResponse, error) {
+func GetPokemapResponse(url string, cache *pokecache.Cache) (PokemapResponse, error) {
 	// get data from cache if available
 	data, ok := cache.Get(url)
 	// not in cache get data from url
