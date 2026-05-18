@@ -60,6 +60,10 @@ func getCommands(p *Pokeapi) map[string]cliCommand {
 			description: "inspects a pokemon",
 			callback:    p.commandInspect,
 		},
+		"pokedex": {
+			description: "shows the content of your pokedex",
+			callback:    p.commandPokedex,
+		},
 	}
 }
 
@@ -103,10 +107,6 @@ func cleanInput(text string) []string {
 }
 
 func (p *Pokeapi) commandExit(args []string) error {
-	fmt.Println("You catched:")
-	for _, pokemon := range p.Pokedex {
-		fmt.Println(pokemon.Name)
-	}
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
@@ -230,6 +230,14 @@ func (p *Pokeapi) commandInspect(args []string) error {
 		fmt.Printf("  -%v\n", types.Type.Name)
 	}
 
+	return nil
+}
+
+func (p *Pokeapi) commandPokedex(args []string) error {
+	fmt.Println("Your pokedex:")
+	for _, pokemon := range p.Pokedex {
+		fmt.Printf(" - %s\n", pokemon.Name)
+	}
 	return nil
 }
 
